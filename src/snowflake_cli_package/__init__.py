@@ -1,0 +1,1 @@
+# Snowflake CLI Plugin to manage generic packages
