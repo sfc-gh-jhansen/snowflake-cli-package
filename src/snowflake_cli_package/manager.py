@@ -526,6 +526,12 @@ class PackageManager(SqlExecutionMixin):
         Raises:
             CliError: If the version doesn't exist or local path is invalid
         """
+        # Validate local path first
+        if not local_path.exists():
+            raise CliError(f"Local path does not exist: {local_path}")
+        if not local_path.is_dir():
+            raise CliError(f"Local path must be a directory: {local_path}")
+
         # Handle "latest" version
         if version.lower() == "latest":
             max_ver = self.get_max_version(stage, package_name)
