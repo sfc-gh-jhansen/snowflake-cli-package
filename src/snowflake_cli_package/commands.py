@@ -252,3 +252,39 @@ def max_version_command(
         return MessageResult(f"No versions found for package '{package_name}'")
 
     return MessageResult(str(max_ver))
+
+
+@app.command(
+    name="path",
+    requires_connection=True,
+)
+def path_command(
+    package_name: str = typer.Argument(
+        ...,
+        help="Name of the package.",
+    ),
+    version: str = typer.Argument(
+        ...,
+        help="Version string. Use 'latest' to get the most recent version.",
+    ),
+    stage: str = typer.Option(
+        ...,
+        "--stage",
+        "-s",
+        help="Stage path for package storage (e.g., @my_db.my_schema.packages).",
+    ),
+    **options,
+) -> MessageResult:
+    """
+    Get the full Snowflake stage path for a package version.
+
+    Returns a path that can be used directly in Snowflake SQL statements
+    to reference files in the package, e.g.:
+    @my_db.my_schema.my_stage/packages/my-package/1.0.0/
+
+    Use 'latest' as VERSION to get the path to the most recent version.
+    """
+    manager = PackageManager()
+    path = manager.get_version_path(stage, package_name, version)
+
+    return MessageResult(path)

@@ -336,3 +336,69 @@ class TestGetVersionPathStr:
 
         # StagePath adds @ prefix if missing
         assert "packages/my-package/1.0.0" in path
+
+
+class TestGetVersionPath:
+    """Tests for get_version_path method."""
+
+    @mock.patch(f"{PACKAGE_MANAGER}.version_exists")
+    def test_returns_path_with_trailing_slash(self, mock_version_exists):
+        """Test that get_version_path returns path with trailing slash."""
+        mock_version_exists.return_value = True
+
+        manager = PackageManager()
+        path = manager.get_version_path(
+            stage="@db.schema.test_stage",
+            package_name="my-package",
+            version="1.2.3",
+        )
+
+        assert path == "@db.schema.test_stage/packages/my-package/1.2.3/"
+        assert path.endswith("/")
+
+    @mock.patch(f"{PACKAGE_MANAGER}.version_exists")
+    @mock.patch(f"{PACKAGE_MANAGER}.get_max_version")
+    def test_resolves_latest_version(self, mock_get_max, mock_version_exists):
+        """Test that 'latest' is resolved to the max version."""
+        mock_get_max.return_value = "2.5.0"
+        mock_version_exists.return_value = True
+
+        manager = PackageManager()
+        path = manager.get_version_path(
+            stage="@db.schema.test_stage",
+            package_name="my-package",
+            version="latest",
+        )
+
+        assert path == "@db.schema.test_stage/packages/my-package/2.5.0/"
+        mock_get_max.assert_called_once_with("@db.schema.test_stage", "my-package")
+
+    @mock.patch(f"{PACKAGE_MANAGER}.get_max_version")
+    def test_raises_error_if_no_versions_for_latest(self, mock_get_max):
+        """Test that error is raised when 'latest' can't be resolved."""
+        mock_get_max.return_value = None
+
+        manager = PackageManager()
+        with pytest.raises(CliError) as exc_info:
+            manager.get_version_path(
+                stage="@db.schema.test_stage",
+                package_name="my-package",
+                version="latest",
+            )
+
+        assert "No versions found" in str(exc_info.value)
+
+    @mock.patch(f"{PACKAGE_MANAGER}.version_exists")
+    def test_raises_error_if_version_not_exists(self, mock_version_exists):
+        """Test that error is raised when version doesn't exist."""
+        mock_version_exists.return_value = False
+
+        manager = PackageManager()
+        with pytest.raises(CliError) as exc_info:
+            manager.get_version_path(
+                stage="@db.schema.test_stage",
+                package_name="my-package",
+                version="9.9.9",
+            )
+
+        assert "does not exist" in str(exc_info.value)

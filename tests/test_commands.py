@@ -8,6 +8,7 @@ from snowflake_cli_package.commands import (
     list_packages_command,
     list_versions_command,
     max_version_command,
+    path_command,
 )
 
 
@@ -108,3 +109,43 @@ class TestMaxVersionCommand:
         )
 
         assert "No versions found" in result.message
+
+
+class TestPathCommand:
+    """Tests for path command."""
+
+    @mock.patch(PACKAGE_MANAGER)
+    def test_path_returns_full_path(self, mock_manager_class):
+        """Test that path returns the full stage path."""
+        mock_manager = mock_manager_class.return_value
+        mock_manager.get_version_path.return_value = (
+            "@db.schema.stage/packages/my-package/1.0.0/"
+        )
+
+        result = path_command(
+            package_name="my-package",
+            version="1.0.0",
+            stage="@db.schema.stage",
+        )
+
+        assert result.message == "@db.schema.stage/packages/my-package/1.0.0/"
+
+    @mock.patch(PACKAGE_MANAGER)
+    def test_path_with_latest_version(self, mock_manager_class):
+        """Test that path works with 'latest' version."""
+        mock_manager = mock_manager_class.return_value
+        mock_manager.get_version_path.return_value = (
+            "@db.schema.stage/packages/my-package/2.5.0/"
+        )
+
+        result = path_command(
+            package_name="my-package",
+            version="latest",
+            stage="@db.schema.stage",
+        )
+
+        # Verify get_version_path was called with "latest"
+        mock_manager.get_version_path.assert_called_once_with(
+            "@db.schema.stage", "my-package", "latest"
+        )
+        assert result.message == "@db.schema.stage/packages/my-package/2.5.0/"

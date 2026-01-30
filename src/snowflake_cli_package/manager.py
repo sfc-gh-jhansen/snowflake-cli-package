@@ -119,6 +119,45 @@ class PackageManager(SqlExecutionMixin):
         versions = self.list_versions(stage, package_name)
         return version in versions
 
+    def get_version_path(
+        self, stage: str, package_name: str, version: str
+    ) -> str:
+        """
+        Get the full Snowflake stage path for a package version.
+
+        Args:
+            stage: The stage path (e.g., "@my_db.my_schema.packages")
+            package_name: Name of the package
+            version: Version string (or "latest" for max version)
+
+        Returns:
+            Full stage path with trailing slash, e.g.:
+            @my_db.my_schema.packages/packages/my-package/1.0.0/
+
+        Raises:
+            CliError: If the version doesn't exist or "latest" can't be resolved
+        """
+        # Handle "latest" version
+        if version.lower() == "latest":
+            max_ver = self.get_max_version(stage, package_name)
+            if max_ver is None:
+                raise CliError(
+                    f"No versions found for package '{package_name}'. "
+                    "Cannot resolve 'latest'."
+                )
+            version = str(max_ver)
+            log.info("Resolved 'latest' to version '%s'", version)
+
+        # Check if version exists
+        if not self.version_exists(stage, package_name, version):
+            raise CliError(
+                f"Version '{version}' does not exist for package '{package_name}'."
+            )
+
+        # Build and return the path with trailing slash
+        path = self._get_version_path_str(stage, package_name, version)
+        return path + "/"
+
     def list_packages(self, stage: str) -> list[str]:
         """
         List all available packages on the stage.
