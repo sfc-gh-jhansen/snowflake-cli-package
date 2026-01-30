@@ -19,20 +19,6 @@ app = SnowTyperFactory(
 
 
 @app.command(
-    name="greet",
-    requires_connection=False,
-    requires_global_options=False,
-)
-def greet_command(
-    name: str = typer.Option("Jane", "--name", "-n", help="Name to greet"),
-) -> MessageResult:
-    """
-    Says hello to someone.
-    """
-    return MessageResult(f"Hello, {name}!")
-
-
-@app.command(
     name="push",
     requires_connection=True,
 )
